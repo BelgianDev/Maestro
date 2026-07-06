@@ -1,0 +1,12 @@
+spring:
+  application:
+    name: Maestro
+
+  datasource:
+    url: "jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:maestro}"
+    username: "${DB_USER:maestro}"
+    password: "${DB_PASSWORD:password}"
+
+  jpa:
+    hibernate:
+      ddl-auto: update
