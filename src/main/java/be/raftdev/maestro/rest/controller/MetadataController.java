@@ -2,13 +2,14 @@ package be.raftdev.maestro.rest.controller;
 
 import be.raftdev.maestro.metadata.MetadataService;
 import be.raftdev.maestro.metadata.MetadataType;
+import be.raftdev.maestro.rest.ApiResponse;
 import be.raftdev.maestro.rest.response.MetadataSearchResultResponse;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/metadata/")
@@ -25,4 +26,11 @@ public class MetadataController {
         this.metadataService.searchMetadata(context, providers);
         return new MetadataSearchResultResponse(context.getResults());
     }
+
+    @PostMapping("add")
+    public ApiResponse add(@RequestBody AddRequestBody body) {
+        UUID identifier =
+    }
+
+    public record AddRequestBody(@NotBlank String provider, @NotBlank String identifier, @NotNull MetadataType type) {}
 }

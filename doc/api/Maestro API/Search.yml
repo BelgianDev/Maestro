@@ -5,7 +5,17 @@ info:
 
 http:
   method: GET
-  url: http://localhost:8080/api/v1/metadata/search
+  url: http://localhost:8080/api/v1/metadata/search?query=U2&type=ARTIST&providers=apple-itunes
+  params:
+    - name: query
+      value: U2
+      type: query
+    - name: type
+      value: ARTIST
+      type: query
+    - name: providers
+      value: apple-itunes
+      type: query
   auth: inherit
 
 settings:

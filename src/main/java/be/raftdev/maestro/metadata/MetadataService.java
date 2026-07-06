@@ -1,5 +1,8 @@
 package be.raftdev.maestro.metadata;
 
+import be.raftdev.maestro.database.repo.ArtistRepository;
+import be.raftdev.maestro.database.repo.ReleaseRepository;
+import be.raftdev.maestro.database.repo.TrackRepository;
 import be.raftdev.maestro.metadata.provider.ItunesMetadataProvider;
 import be.raftdev.maestro.util.LogUtils;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -20,15 +23,22 @@ import java.util.stream.Collectors;
 @Validated
 public class MetadataService {
     private static final Logger LOGGER = LogUtils.getLogger();
-
-    private final Map<String, MetadataProvider> providers;
     private static final Executor REQUEST_EXECUTOR = new ThreadPoolExecutor(0, 6,
             30, TimeUnit.SECONDS,
             new SynchronousQueue<>());
 
-    public MetadataService(List<MetadataProvider> providers) {
+    private final Map<String, MetadataProvider> providers;
+    private final ArtistRepository artists;
+    private final ReleaseRepository releases;
+    private final TrackRepository tracks;
+
+    public MetadataService(List<MetadataProvider> providers, ArtistRepository artists, ReleaseRepository releases, TrackRepository tracks) {
         this.providers = providers.stream()
                 .collect(Collectors.toMap(MetadataProvider::identifier, provider -> provider));
+
+        this.artists = artists;
+        this.releases = releases;
+        this.tracks = tracks;
     }
 
     /**
@@ -61,6 +71,10 @@ public class MetadataService {
         CompletableFuture.allOf(futures).join();
 
         LOGGER.info("Search done, {} results found.", ctx.results.size());
+    }
+
+    public void addMetadata(@NotBlank String provider, @NotBlank String identifier, @NotNull MetadataType type) {
+
     }
 
     /**
