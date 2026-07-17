@@ -29,7 +29,8 @@ public class MetadataController {
 
     @PostMapping("add")
     public ApiResponse add(@RequestBody AddRequestBody body) {
-        UUID identifier =
+        UUID identifier = this.metadataService.addMetadata(body.provider, body.identifier, body.type);
+        return ApiResponse.success(identifier);
     }
 
     public record AddRequestBody(@NotBlank String provider, @NotBlank String identifier, @NotNull MetadataType type) {}

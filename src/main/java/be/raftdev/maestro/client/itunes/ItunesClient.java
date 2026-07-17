@@ -7,4 +7,7 @@ public interface ItunesClient {
 
     @GetExchange("/search?media=music")
     ItunesSearchResponse search(@RequestParam String term, @RequestParam(required = false) String entity, @RequestParam int limit);
+
+    @GetExchange("/lookup")
+    ItunesSearchResponse lookupArtist(@RequestParam String id);
 }

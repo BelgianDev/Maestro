@@ -1,5 +1,7 @@
 package be.raftdev.maestro.client.itunes;
 
+import be.raftdev.maestro.metadata.MetadataProvider;
+import be.raftdev.maestro.metadata.MetadataService;
 import be.raftdev.maestro.metadata.MetadataType;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.annotation.Nullable;
@@ -57,10 +59,47 @@ public record ItunesSearchResponse(int resultCount, List<Result> results) {
         public @Nullable MetadataType getMetadataType() {
             return switch (this.wrapperType) {
                 case "track" -> MetadataType.TRACK;
-                case "collection" -> MetadataType.ALBUM;
+                case "collection" -> MetadataType.RELEASE;
                 case "artist" -> MetadataType.ARTIST;
                 default -> null;
             };
+        }
+
+        public MetadataService.SearchResult asResult(MetadataProvider provider) {
+            if (this.getMetadataType() == null)
+                return null;
+
+            return switch (this.getMetadataType()) {
+                case ARTIST -> this.asArtistResult(provider);
+                case RELEASE -> this.asReleaseResult(provider);
+                case TRACK -> this.asTrackResult(provider);
+            };
+        }
+
+        public MetadataService.SearchResult asArtistResult(MetadataProvider provider) {
+            String name = this.artistName();
+            String id = String.valueOf(this.artistId());
+            String link = this.artistLinkUrl();
+
+            return new MetadataService.SearchResult(provider, id, name, MetadataType.ARTIST, null, link, null);
+        }
+
+        public MetadataService.SearchResult asReleaseResult(MetadataProvider provider) {
+            String name = this.collectionName();
+            String id = String.valueOf(this.collectionId());
+            String link = this.collectionViewUrl();
+            String assetUrl = this.artworkUrl100();
+
+            return new MetadataService.SearchResult(provider, id, name, MetadataType.RELEASE, null, link, assetUrl);
+        }
+
+        public MetadataService.SearchResult asTrackResult(MetadataProvider provider) {
+            String name = this.trackName();
+            String id = String.valueOf(this.trackId());
+            String link = this.trackViewUrl();
+            String assetUrl = this.artworkUrl100();
+
+            return new MetadataService.SearchResult(provider, id, name, MetadataType.TRACK, null, link, assetUrl);
         }
     }
 }

@@ -2,6 +2,8 @@ package be.raftdev.maestro.metadata.provider;
 
 import be.raftdev.maestro.client.itunes.ItunesClient;
 import be.raftdev.maestro.client.itunes.ItunesSearchResponse;
+import be.raftdev.maestro.database.entity.ArtistEntity;
+import be.raftdev.maestro.exception.provider.UnknownMetadataException;
 import be.raftdev.maestro.metadata.MetadataProvider;
 import be.raftdev.maestro.metadata.MetadataService;
 import be.raftdev.maestro.metadata.MetadataType;
@@ -10,6 +12,8 @@ import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.NotNull;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
 
 /**
  * iTunes (Apple) metadata provider, using the free API for basic meta-data resolving
@@ -36,44 +40,25 @@ public class ItunesMetadataProvider implements MetadataProvider {
         LOGGER.info("Retrieved {} results from iTunes", response.resultCount());
 
         for (ItunesSearchResponse.Result result : response.results()) {
-            MetadataType type = result.getMetadataType();
-            if (type == null)
+            MetadataService.SearchResult searchResult = result.asResult(this);
+            if (searchResult == null)
                 LOGGER.error("Unknown wrapper type '{}': {}", result.wrapperType(), result);
-
-            MetadataService.SearchResult searchResult = switch (type) {
-                case ARTIST -> this.handleArtist(result);
-                case ALBUM -> this.handleAlbum(result);
-                case TRACK -> this.handleTrack(result);
-            };
 
             context.addResult(searchResult);
         }
     }
 
-    public MetadataService.SearchResult handleArtist(ItunesSearchResponse.Result result) {
-        String name = result.artistName();
-        String id = String.valueOf(result.artistId());
-        String link = result.artistLinkUrl();
+    @Override
+    public ArtistEntity queryArtist(String id) {
+        ItunesSearchResponse response = this.itunesClient.lookupArtist(id);
+        ItunesSearchResponse.Result result = response.results().stream().filter(resultCandidate ->
+                resultCandidate.getMetadataType() == MetadataType.ARTIST).findFirst().orElse(null);
 
-        return new MetadataService.SearchResult(this, id, name, MetadataType.ARTIST, null, link, null);
-    }
+        if (result == null)
+            throw new UnknownMetadataException("Could not find iTunes artist with id '"+ id +"'");
 
-    public MetadataService.SearchResult handleAlbum(ItunesSearchResponse.Result result) {
-        String name = result.collectionName();
-        String id = String.valueOf(result.collectionId());
-        String link = result.collectionViewUrl();
-        String assetUrl = result.artworkUrl100();
-
-        return new MetadataService.SearchResult(this, id, name, MetadataType.ALBUM, null, link, assetUrl);
-    }
-
-    public MetadataService.SearchResult handleTrack(ItunesSearchResponse.Result result) {
-        String name = result.trackName();
-        String id = String.valueOf(result.trackId());
-        String link = result.trackViewUrl();
-        String assetUrl = result.artworkUrl100();
-
-        return new MetadataService.SearchResult(this, id, name, MetadataType.TRACK, null, link, assetUrl);
+        ArtistEntity.ArtistLink link = new ArtistEntity.ArtistLink("Apple Music", result.artistLinkUrl());
+        return new ArtistEntity(result.artistName(), null, List.of(link));
     }
 
     /**
@@ -88,10 +73,9 @@ public class ItunesMetadataProvider implements MetadataProvider {
             return null;
 
         return switch (type) {
-            case ALBUM -> "album";
+            case RELEASE -> "album";
             case ARTIST -> "musicArtist";
             case TRACK -> "song";
         };
     }
-
 }

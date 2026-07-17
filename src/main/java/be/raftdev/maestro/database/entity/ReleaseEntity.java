@@ -43,15 +43,11 @@ public class ReleaseEntity {
     private ArtistEntity artist;
 
     @OneToMany(
-            mappedBy = "tracks",
+            mappedBy = "release",
             cascade = CascadeType.ALL,
             orphanRemoval = true
     )
     private List<TrackEntity> tracks;
-
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "metadata_provider_data", nullable = false)
-    private ObjectNode providerData;
 
     protected ReleaseEntity() {}
 
@@ -62,8 +58,6 @@ public class ReleaseEntity {
         this.trackCount = trackCount;
         this.discCount = discCount;
         this.artist = artist;
-
-        this.providerData = new ObjectNode(JsonNodeFactory.instance);
     }
 
     public UUID getIdentifier() {
@@ -84,10 +78,6 @@ public class ReleaseEntity {
 
     public ArtistEntity getArtist() {
         return artist;
-    }
-
-    public ObjectNode getProviderData() {
-        return providerData;
     }
 
     public Integer getTrackCount() {

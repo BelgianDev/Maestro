@@ -1,12 +1,13 @@
 package be.raftdev.maestro.metadata;
 
-import be.raftdev.maestro.database.repo.ArtistRepository;
-import be.raftdev.maestro.database.repo.ReleaseRepository;
-import be.raftdev.maestro.database.repo.TrackRepository;
-import be.raftdev.maestro.metadata.provider.ItunesMetadataProvider;
+import be.raftdev.maestro.database.entity.ArtistEntity;
+import be.raftdev.maestro.database.entity.ArtistIdentity;
+import be.raftdev.maestro.database.repo.*;
+import be.raftdev.maestro.exception.provider.NoSuchProviderException;
 import be.raftdev.maestro.util.LogUtils;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.annotation.Nullable;
+import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -28,17 +29,28 @@ public class MetadataService {
             new SynchronousQueue<>());
 
     private final Map<String, MetadataProvider> providers;
+
+    // Entities
     private final ArtistRepository artists;
     private final ReleaseRepository releases;
     private final TrackRepository tracks;
 
-    public MetadataService(List<MetadataProvider> providers, ArtistRepository artists, ReleaseRepository releases, TrackRepository tracks) {
+    // Identities
+    private final ArtistIdentityRepository artistIdentities;
+    private final ReleaseIdentityRepository releaseIdentities;
+    private final TrackIdentityRepository trackIdentityRepository;
+
+    public MetadataService(List<MetadataProvider> providers, ArtistRepository artists, ReleaseRepository releases, TrackRepository tracks, ArtistIdentityRepository artistIdentities, ReleaseIdentityRepository releaseIdentities, TrackIdentityRepository trackIdentityRepository) {
         this.providers = providers.stream()
                 .collect(Collectors.toMap(MetadataProvider::identifier, provider -> provider));
 
         this.artists = artists;
         this.releases = releases;
         this.tracks = tracks;
+
+        this.artistIdentities = artistIdentities;
+        this.releaseIdentities = releaseIdentities;
+        this.trackIdentityRepository = trackIdentityRepository;
     }
 
     /**
@@ -73,15 +85,28 @@ public class MetadataService {
         LOGGER.info("Search done, {} results found.", ctx.results.size());
     }
 
-    public void addMetadata(@NotBlank String provider, @NotBlank String identifier, @NotNull MetadataType type) {
+    @Transactional
+    public UUID addMetadata(@NotBlank String providerId, @NotBlank String identifier, @NotNull MetadataType type) {
+        MetadataProvider provider = this.providers.get(providerId);
+        if (provider == null)
+            throw new NoSuchProviderException();
 
+        if (type != MetadataType.ARTIST)
+            throw new UnsupportedOperationException("Not supported yet.");
+
+        ArtistEntity entity = provider.queryArtist(identifier);
+        ArtistIdentity identity = new ArtistIdentity(provider, identifier, entity);
+
+        this.artists.save(entity);
+        this.artistIdentities.save(identity);
+
+        return entity.getIdentifier();
     }
 
     /**
      * Search context, object created when calling the search endpoint, shared by all providers during search.
      *
-     * @implNote Some synchronization is needed on the mutable fields, this obje
-     *     }ct is used on multiple threads.
+     * @implNote Some synchronization is needed on the mutable fields, this object is used by multiple threads.
      */
     @Validated
     public static class SearchContext {

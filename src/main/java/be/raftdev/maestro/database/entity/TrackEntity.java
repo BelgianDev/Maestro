@@ -42,10 +42,6 @@ public class TrackEntity {
     @JoinColumn(name = "release_id", nullable = false)
     private ReleaseEntity release;
 
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "metadata_provider_data", nullable = false)
-    private ObjectNode providerData;
-
     protected TrackEntity() {}
 
     public TrackEntity(@NotBlank String name, @Positive int discNumber, @Positive int trackNumber, @Positive int trackLength, @NotNull ArtistEntity artist, @NotNull ReleaseEntity release) {
@@ -55,8 +51,6 @@ public class TrackEntity {
         this.trackLength = trackLength;
         this.artist = artist;
         this.release = release;
-
-        this.providerData = new ObjectNode(JsonNodeFactory.instance);
     }
 
     public UUID getIdentifier() {
@@ -85,10 +79,6 @@ public class TrackEntity {
 
     public ReleaseEntity getRelease() {
         return release;
-    }
-
-    public ObjectNode getProviderData() {
-        return providerData;
     }
 
     public void setName(@NotBlank String name) {

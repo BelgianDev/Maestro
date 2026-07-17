@@ -1,13 +1,16 @@
 package be.raftdev.maestro.database.entity;
 
+import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UuidGenerator;
 import org.hibernate.type.SqlTypes;
+import org.springframework.boot.context.properties.bind.DefaultValue;
 import tools.jackson.databind.node.JsonNodeFactory;
 import tools.jackson.databind.node.ObjectNode;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -23,16 +26,15 @@ public class ArtistEntity {
     @Column(name = "name", nullable = false)
     private String name;
 
+    @Column(name = "description")
+    private String description;
+
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "links")
     private List<ArtistLink> links;
 
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "metadata_provider_data", nullable = false)
-    private ObjectNode providerData;
-
     @OneToMany(
-            mappedBy = "releases",
+            mappedBy = "artist",
             cascade = CascadeType.ALL,
             orphanRemoval = true
     )
@@ -40,10 +42,10 @@ public class ArtistEntity {
 
     protected ArtistEntity() {}
 
-    public ArtistEntity(String name, List<ArtistLink> links) {
+    public ArtistEntity(String name, @Nullable String description, List<ArtistLink> links) {
         this.name = name;
-        this.links = links;
-        this.providerData = new ObjectNode(JsonNodeFactory.instance);
+        this.description = description;
+        this.links = new ArrayList<>(links);
     }
 
     public UUID getIdentifier() {
@@ -54,12 +56,12 @@ public class ArtistEntity {
         return name;
     }
 
-    public List<ArtistLink> getLinks() {
-        return links;
+    public String getDescription() {
+        return description;
     }
 
-    public ObjectNode getProviderData() {
-        return providerData;
+    public List<ArtistLink> getLinks() {
+        return links;
     }
 
     public void setName(String name) {
@@ -68,6 +70,10 @@ public class ArtistEntity {
 
     public void setLinks(List<ArtistLink> links) {
         this.links = links;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
     }
 
     public record ArtistLink(@NotNull String name, @NotNull String url) {
